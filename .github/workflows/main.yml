@@ -1,0 +1,43 @@
+name: Java CI with Maven and Allure
+
+on:
+  push:
+    branches: [ "main", "master" ]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up JDK 23
+      uses: actions/setup-java@v4
+      with:
+        java-version: '23' # Было '21'
+        distribution: 'temurin'
+        cache: maven
+
+    - name: Run Tests
+      run: mvn clean test
+      continue-on-error: true # Это важно, чтобы билд не падал из-за упавших тестов
+
+    - name: Allure Report
+      uses: simple-elf/allure-report-action@master
+      if: always()
+      with:
+        allure_results: target/allure-results
+        gh_pages: gh-pages
+        allure_report: allure-report
+        allure_history: allure-history
+
+    - name: Deploy to GitHub Pages
+      if: always()
+      uses: peaceiris/actions-gh-pages@v3
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_branch: gh-pages
+        publish_dir: allure-history
