@@ -1,0 +1,53 @@
+name: Java CI with Maven and Allure
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up JDK 21
+      uses: actions/setup-java@v4
+      with:
+        java-version: '21'
+        distribution: 'temurin'
+        cache: maven
+
+    - name: Run Tests with Maven
+      run: mvn clean test
+      continue-on-error: true
+
+    - name: Get Allure history
+      uses: actions/checkout@v4
+      if: always()
+      continue-on-error: true
+      with:
+        ref: gh-pages
+        path: gh-pages
+
+    - name: Allure Report action from GitHub Actions
+      uses: simple-elf/allure-report-action@master
+      if: always()
+      with:
+        allure_results: target/allure-results
+        gh_pages: gh-pages
+        allure_report: allure-report
+        allure_history: allure-history
+
+    - name: Deploy report to Github Pages
+      if: always()
+      uses: peaceiris/actions-gh-pages@v3
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_branch: gh-pages
+        publish_dir: allure-history
